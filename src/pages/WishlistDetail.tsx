@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getUser, updateUser, getUsers, Wishlist } from '../utils/localStorage';
-import { ArrowLeft, Edit, Trash2, Share2, ShoppingCart, MessageCircle, Send } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Share2, ShoppingCart, MessageCircle, Send, Check } from 'lucide-react';
 
 export const WishlistDetail = () => {
   const { currentUser } = useAuth();
@@ -13,6 +13,7 @@ export const WishlistDetail = () => {
   const [owner, setOwner] = useState<string>('');
   const [comment, setComment] = useState('');
   const [showShare, setShowShare] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     const ownerUsername = location.state?.owner || currentUser;
@@ -49,6 +50,47 @@ export const WishlistDetail = () => {
         alert('Added to cart!');
       }
     }
+  };
+
+  const toggleItemSelection = (itemId: number) => {
+    const newSelected = new Set(selectedItems);
+    if (newSelected.has(itemId)) {
+      newSelected.delete(itemId);
+    } else {
+      newSelected.add(itemId);
+    }
+    setSelectedItems(newSelected);
+  };
+
+  const handleCheckoutSelected = () => {
+    if (selectedItems.size === 0) {
+      alert('Please select at least one item');
+      return;
+    }
+
+    const user = getUser(currentUser!);
+    if (!user || !wishlist) return;
+
+    const itemsToAdd = wishlist.items.filter(item => selectedItems.has(item.id));
+    const updatedCart = [...user.cart];
+
+    itemsToAdd.forEach(item => {
+      const cartItem = { ...item, addedFrom: wishlist.title };
+      if (!updatedCart.find(i => i.id === item.id)) {
+        updatedCart.push(cartItem);
+      }
+    });
+
+    updateUser(currentUser!, { cart: updatedCart });
+    setSelectedItems(new Set());
+    navigate('/checkout');
+  };
+
+  const getSelectedTotal = () => {
+    if (!wishlist) return 0;
+    return wishlist.items
+      .filter(item => selectedItems.has(item.id))
+      .reduce((sum, item) => sum + item.price, 0);
   };
 
   const handleAddComment = (e: React.FormEvent) => {
@@ -174,33 +216,82 @@ export const WishlistDetail = () => {
           )}
 
           <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-gray-800">Items ({wishlist.items.length})</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-800">Items ({wishlist.items.length})</h2>
+              {!isOwner && selectedItems.size > 0 && (
+                <div className="text-sm font-medium text-pink-600 bg-pink-50 px-4 py-2 rounded-lg">
+                  {selectedItems.size} selected
+                </div>
+              )}
+            </div>
             {wishlist.items.length === 0 ? (
               <p className="text-gray-500">No items in this wishlist yet</p>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {wishlist.items.map((item) => (
-                  <div key={item.id} className="bg-gray-50 rounded-lg p-4 hover:shadow-md transition-all">
-                    <img src={item.image} alt={item.title} className="w-full h-48 object-contain mb-3 rounded" />
-                    <h3 className="font-semibold text-gray-800 mb-2 line-clamp-2">{item.title}</h3>
-                    <p className="text-pink-600 font-bold text-lg mb-3">${item.price}</p>
-                    {!isOwner && (
-                      <button
-                        onClick={() => handleAddToCart(item)}
-                        className="w-full flex items-center justify-center gap-2 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg hover:shadow-lg transition-all"
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {wishlist.items.map((item) => {
+                    const isSelected = selectedItems.has(item.id);
+                    return (
+                      <div
+                        key={item.id}
+                        className={`bg-gray-50 rounded-lg p-4 hover:shadow-md transition-all cursor-pointer border-2 ${
+                          isSelected ? 'border-pink-500 bg-pink-50' : 'border-transparent'
+                        }`}
                       >
-                        <ShoppingCart className="w-4 h-4" />
-                        Add to Cart
+                        {!isOwner && (
+                          <div className="flex items-start justify-between mb-3">
+                            <button
+                              onClick={() => toggleItemSelection(item.id)}
+                              className={`flex-shrink-0 w-6 h-6 rounded border-2 flex items-center justify-center transition-all ${
+                                isSelected
+                                  ? 'bg-pink-500 border-pink-500'
+                                  : 'border-gray-300 hover:border-pink-400'
+                              }`}
+                            >
+                              {isSelected && <Check className="w-4 h-4 text-white" />}
+                            </button>
+                          </div>
+                        )}
+                        <img src={item.image} alt={item.title} className="w-full h-48 object-contain mb-3 rounded" />
+                        <h3 className="font-semibold text-gray-800 mb-2 line-clamp-2">{item.title}</h3>
+                        <p className="text-pink-600 font-bold text-lg mb-3">${item.price}</p>
+                        {!isOwner && (
+                          <button
+                            onClick={() => handleAddToCart(item)}
+                            className="w-full flex items-center justify-center gap-2 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg hover:shadow-lg transition-all"
+                          >
+                            <ShoppingCart className="w-4 h-4" />
+                            Add to Cart
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {!isOwner && selectedItems.size > 0 && (
+                  <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
+                    <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">{selectedItems.size} items selected</p>
+                        <p className="text-2xl font-bold text-pink-600">${getSelectedTotal().toFixed(2)}</p>
+                      </div>
+                      <button
+                        onClick={handleCheckoutSelected}
+                        className="px-8 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg font-medium hover:shadow-lg transition-all flex items-center gap-2"
+                      >
+                        <ShoppingCart className="w-5 h-5" />
+                        Checkout Selected Items
                       </button>
-                    )}
+                    </div>
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             )}
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-lg p-8">
+        <div className={`bg-white rounded-xl shadow-lg p-8 ${selectedItems.size > 0 && !isOwner ? 'mb-32' : ''}`}>
           <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
             <MessageCircle className="w-6 h-6 text-purple-500" />
             Comments ({wishlist.comments.length})
