@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getUser, updateUser, CartItem } from '../utils/localStorage';
 import { ShoppingCart, Trash2 } from 'lucide-react';
 
 export const Cart = () => {
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [cart, setCart] = useState<CartItem[]>([]);
 
   useEffect(() => {
@@ -78,12 +80,12 @@ export const Cart = () => {
                     </div>
                   </div>
                 </div>
-                <button className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg font-medium hover:shadow-lg transition-all">
-                  Checkout
+                <button
+                  onClick={() => navigate('/checkout')}
+                  className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg font-medium hover:shadow-lg transition-all"
+                >
+                  Proceed to Checkout
                 </button>
-                <p className="text-xs text-gray-500 text-center mt-4">
-                  This is a demo. No actual checkout.
-                </p>
               </div>
             </div>
           </div>

@@ -9,6 +9,7 @@ import { WishlistDetail } from './pages/WishlistDetail';
 import { Friends } from './pages/Friends';
 import { Cart } from './pages/Cart';
 import { Products } from './pages/Products';
+import { Checkout } from './pages/Checkout';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { currentUser } = useAuth();
@@ -30,6 +31,7 @@ function AppRoutes() {
         <Route path="/wishlists/:id" element={<ProtectedRoute><WishlistDetail /></ProtectedRoute>} />
         <Route path="/friends" element={<ProtectedRoute><Friends /></ProtectedRoute>} />
         <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
+        <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
         <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
         <Route path="/" element={<Navigate to="/dashboard" />} />
       </Routes>

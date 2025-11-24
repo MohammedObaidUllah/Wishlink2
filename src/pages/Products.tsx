@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getUser, updateUser, WishlistItem } from '../utils/localStorage';
-import { ShoppingBag, Plus, Search, Filter } from 'lucide-react';
+import { ShoppingBag, Plus, Search, Filter, ShoppingCart } from 'lucide-react';
 
 export const Products = () => {
   const { currentUser } = useAuth();
@@ -70,6 +70,21 @@ export const Products = () => {
     setShowWishlistModal(false);
     setSelectedProduct(null);
     alert('Added to wishlist!');
+  };
+
+  const addToCart = (product: WishlistItem) => {
+    const user = getUser(currentUser!);
+    if (!user) return;
+
+    const cartItem = { ...product, addedFrom: 'Products' };
+    if (!user.cart.find(i => i.id === product.id)) {
+      updateUser(currentUser!, {
+        cart: [...user.cart, cartItem]
+      });
+      alert('Added to cart!');
+    } else {
+      alert('Item already in cart!');
+    }
   };
 
   const user = getUser(currentUser!);
@@ -148,13 +163,22 @@ export const Products = () => {
                   </h3>
                   <p className="text-2xl font-bold text-pink-600 mb-4">${product.price}</p>
 
-                  <button
-                    onClick={() => handleAddToWishlist(product)}
-                    className="w-full flex items-center justify-center gap-2 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg hover:shadow-lg transition-all"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add to Wishlist
-                  </button>
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => addToCart(product)}
+                      className="w-full flex items-center justify-center gap-2 py-2 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg hover:shadow-lg transition-all"
+                    >
+                      <ShoppingCart className="w-4 h-4" />
+                      Add to Cart
+                    </button>
+                    <button
+                      onClick={() => handleAddToWishlist(product)}
+                      className="w-full flex items-center justify-center gap-2 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg hover:shadow-lg transition-all"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add to Wishlist
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
